@@ -56,6 +56,3 @@ L'étape 0 m'a pris à elle seule plusieurs semaine...
 3. **Interface utilisateur** :
    - Améliorer l'apparence des écrans en utilisant davantage de composants **Material Design**.
 
-4. **Documentation** :
-   - Ajouter des commentaires détaillés et améliorer la documentation pour faciliter la prise en main par d'autres développeurs.
-
