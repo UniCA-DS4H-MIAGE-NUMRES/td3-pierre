@@ -1,76 +1,69 @@
 package com.example.pizzapp
 
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
-import com.example.pizzapp.Screen.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import com.example.pizzapp.model.Caddy
 import com.example.pizzapp.model.PizzaViewModel
 import com.example.pizzapp.screen.PizzaMenu
 import com.example.pizzapp.screens.*
 
-
 @Composable
 fun App() {
-    val pizzaViewModel = PizzaViewModel()
-    val caddyViewModel = Caddy() // Gère le panier
+    MaterialTheme {
+        // Initialisation des ViewModels
+        val pizzaViewModel = remember { PizzaViewModel() }
+        val caddyViewModel = remember { Caddy() }
 
-    // Utilisation de `mutableStateOf` pour gérer la navigation
-    var currentScreen by remember { mutableStateOf<Screen>(Screen.Welcome) }
+        // Gestion de l'écran courant
+        var currentScreen by remember { mutableStateOf("welcome") }
 
-    // Affichage de l'écran en fonction de l'état actuel
-    when (currentScreen) {
-        is Screen.Welcome -> WelcomeScreen(
-            onMenuClick = { currentScreen = Screen.Menu },
-            onCaddyClick = { currentScreen = Screen.Caddy },
-            onHistoryClick = { currentScreen = Screen.History }
-        )
+        when (val screen = currentScreen) {
+            "welcome" -> WelcomeScreen(
+                onMenuClick = { currentScreen = "menu" },
+                onCaddyClick = { currentScreen = "cart" },
+                onHistoryClick = { currentScreen = "orderHistory" }
+            )
+            "menu" -> PizzaMenu(
+                pizzaViewModel = pizzaViewModel,
+                onPizzaSelected = { pizzaId ->
+                    currentScreen = "detail/$pizzaId"
+                },
+                onBack = { currentScreen = "welcome" }
+            )
+            "cart" -> CaddyScreen(
+                caddyViewModel = caddyViewModel,
+                onBack = { currentScreen = "menu" },
+                onPay = { currentScreen = "orderHistory" }
+            )
+            "orderHistory" -> HistoryScreen(
+                onBack = { currentScreen = "welcome" }
+            )
+            else -> {
+                // Gérer les écrans de détails avec des paramètres
+                if (screen.startsWith("detail/")) {
+                    val pizzaId = screen.removePrefix("detail/").toIntOrNull()
+                    val pizza = pizzaViewModel.getPizzaById(pizzaId ?: -1)
+                    if (pizza != null) {
+                        DetailPizza(
+                            pizza = pizza,
+                            pizzaViewModel = pizzaViewModel,
+                            caddyViewModel = caddyViewModel,
+                            onBack = { currentScreen = "menu" }
+                        )
 
-        is Screen.Menu -> PizzaMenu(
-            pizzaViewModel = pizzaViewModel,
-            onPizzaSelected = { pizzaId ->
-                currentScreen = PizzaDetails(pizzaId) // Passer à l'écran de détails de la pizza
-            },
-            onBack = { currentScreen = Screen.Welcome } // Gérer le retour vers l'écran d'accueil
-
-        )
-
-        is Screen.PizzaDetails -> DetailPizza(
-            pizzaId = (currentScreen as Screen.PizzaDetails).pizzaId,
-            pizzaViewModel = pizzaViewModel,
-            caddyViewModel = caddyViewModel,
-            onBack = { currentScreen = Screen.Menu } // Revenir au menu
-        )
-
-        is Screen.Caddy -> CaddyScreen(
-            caddyViewModel = caddyViewModel,
-            onBack = { currentScreen = Screen.Menu }, // Retour au menu
-            onPay = { currentScreen = Screen.History } // Aller à l'historique après paiement
-        )
-
-
-                /*
-                is Screen.PizzaDetails -> DetailPizza(
-                    pizzaId = (currentScreen as Screen.PizzaDetails).pizzaId,
-                    pizzaViewModel = pizzaViewModel,
-                    caddyViewModel = caddyViewModel,
-                    onBack = { currentScreen = Screen.Menu } // Revenir au menu
-                )
-
-                is Screen.History -> HistoryScreen(
-                    onBack = { currentScreen = Screen.Welcome },
-                    modifier = Modifier.fillMaxSize().padding(16.dp)
-                )*/
-        Screen.Caddy -> TODO()
-        Screen.History -> TODO()
-        is Screen.PizzaDetails -> TODO()
+                    } else {
+                        androidx.compose.material3.Text(
+                            "Pizza introuvable",
+                            modifier = Modifier.padding(16.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+        }
     }
-}
-
-
-// Définition des différents écrans disponibles
-sealed class Screen {
-    object Welcome : Screen()
-    object Menu : Screen()
-    data class PizzaDetails(val pizzaId: Int) : Screen() // Écran de détails pour une pizza
-    object Caddy : Screen()
-    object History : Screen()
 }
